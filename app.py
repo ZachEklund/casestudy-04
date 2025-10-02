@@ -22,8 +22,12 @@ def submit_survey():
     try:
         payload = request.get_json(silent=True)
         if payload is None:
-            return jsonify({"error": "invalid_json", "detail": "Body must be application/json"}), 400
+            return jsonify({
+                "error": "invalid_json",
+                "detail": "Body must be application/json"
+            }), 400
         
+        # Validate input with Pydantic
         submission = SurveySubmission(**payload)
 
         # Hash email and age for privacy
@@ -37,29 +41,38 @@ def submit_survey():
             now_str = datetime.now(timezone.utc).strftime("%Y%m%d%H")
             submission_id = hashlib.sha256((submission.email + now_str).encode()).hexdigest()
 
-        # Prepare stored record
+        # Prepare record for storage
         record = StoredSurveyRecord(
             name=submission.name,
             email_hash=email_hash,
             age_hash=age_hash,
-            content=submission.content,
+            consent=submission.consent,
             rating=submission.rating,
             comments=submission.comments,
             user_agent=submission.user_agent,
             submission_id=submission_id,
+            source=submission.source,
             received_at=datetime.now(timezone.utc),
             ip=request.headers.get("X-Forwarded-For", request.remote_addr or "")
         )
 
+        # Append record to storage
         append_json_line(record.dict())
+
         return jsonify({"status": "ok"}), 201
 
     except ValidationError as ve:
-        return jsonify({"error": "validation_error", "detail": ve.errors()}), 422
+        return jsonify({
+            "error": "validation_error",
+            "detail": ve.errors()
+        }), 422
     except Exception as e:
         import traceback
         print(traceback.format_exc())
-        return jsonify({"error": "request_failed", "detail": str(e)}), 500
+        return jsonify({
+            "error": "request_failed",
+            "detail": str(e)
+        }), 500
 
 if __name__ == "__main__":
     app.run(port=5000, debug=True)
