@@ -12,6 +12,7 @@ class SurveySubmission(BaseModel):
     comments: Optional[str] = Field(None, max_length=1000)
     user_agent: Optional[str] = None
     submission_id: Optional[str] = None
+    source: Optional[str] = "other"
   
 
     @validator("comments")
@@ -32,5 +33,8 @@ class StoredSurveyRecord(BaseModel):
     consent: bool
     rating: int
     comments: Optional[str]
+    user_agent: Optional[str] = None
+    submission_id: Optional[str] = None
+    source: Optional[str] = None
     received_at: datetime
     ip: str
